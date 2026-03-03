@@ -85,7 +85,7 @@ Write a standalone Playwright test script that verifies the QA flow end-to-end. 
 2. Log in using the QA auth bypass (from Gather Context)
 3. Navigate to the feature/page being tested
 4. Perform the verification steps
-5. Take screenshots at key points (saved to a temp directory)
+5. Take screenshots at key points (saved to the QA report directory — see below)
 6. Print PASS/FAIL with clear descriptions of what was checked
 7. Exit with code 0 on success, 1 on failure
 
@@ -93,6 +93,30 @@ Write a standalone Playwright test script that verifies the QA flow end-to-end. 
 
 **If the script fails**, debug it — read the error output, fix the script, and re-run. The same standard applies as the seed: don't ship a broken verification script.
 </browser-approach>
+
+<qa-report-directory>
+Save all screenshots and the HTML report to a local directory outside of git:
+
+```
+tmp/qa-reports/<ticket-id>/
+├── index.html
+└── screenshots/
+    ├── 01-login.png
+    ├── 02-navigate.png
+    ├── 03-verify-feature.png
+    └── ...
+```
+
+Make sure `tmp/` is in `.gitignore` (add it if not). Name screenshots with a numbered prefix and descriptive slug so they sort correctly and are self-explanatory.
+
+The `index.html` report should be a self-contained file (inline CSS/JS, no external dependencies) that references the screenshots via relative paths. It should include:
+- **Timeline/carousel view** — step-by-step screenshots, navigable with arrow keys or click
+- Each step shows: step number, description of what was done, screenshot, PASS/FAIL badge
+- **QA steps section** at the bottom (copy-paste ready)
+- Ticket ID and timestamp
+
+After generating the report, open it in the browser: `open tmp/qa-reports/<ticket-id>/index.html`
+</qa-report-directory>
 </step>
 
 <step name="Write PR QA Steps">
@@ -124,8 +148,38 @@ Every QA step MUST include:
 Show the user:
 1. The seed script (summarized — they can read the file)
 2. Proof the seed ran successfully (output)
-3. Browser verification results (screenshots + pass/fail)
-4. The proposed PR QA steps (formatted for copy-paste into the PR)
+3. The HTML report (should already be open in browser from the previous step)
+4. A **ready-to-paste PR comment** — markdown-formatted QA steps that the user can copy into a GitHub PR comment. The comment should be complete text with no image placeholders — the user will drag-and-drop screenshots from `tmp/qa-reports/<ticket-id>/screenshots/` to the bottom of the comment themselves.
+
+<pr-comment-format>
+The generated PR comment should look like:
+
+```markdown
+## QA Verification
+
+**Seed:** `<exact command to run the seed>`
+**Tested on:** `<base URL>`
+**Logged in as:** `<user email>`
+
+### Steps verified:
+1. <step description> — <PASS/FAIL>
+2. <step description> — <PASS/FAIL>
+3. <step description> — <PASS/FAIL>
+
+### To reproduce manually:
+1. `<exact start command>`
+2. `<exact seed command>`
+3. Go to `<exact URL>`
+4. Log in as `<exact email>` using `<exact auth method>`
+5. <exact action>
+6. Verify: <exact expected outcome>
+
+Screenshots attached below.
+```
+
+The user will paste this into the PR comment and then drag-drop the screenshots at the bottom.
+</pr-comment-format>
+
 5. Ask if they want to adjust anything before finalizing
 </step>
 
