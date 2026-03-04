@@ -81,13 +81,35 @@ Write a standalone Playwright test script that verifies the QA flow end-to-end. 
 **Why a script instead of interactive browser use:** Interactive Playwright MCP tools require a permission prompt for every action (navigate, click, fill, screenshot). A standalone script runs as a single Bash command — one permission prompt for the whole flow.
 
 **The script should:**
-1. Launch a browser and navigate to the app
+1. Launch a browser with **video recording enabled** and navigate to the app
 2. Log in using the QA auth bypass (from Gather Context)
 3. Navigate to the feature/page being tested
 4. Perform the verification steps
 5. Take screenshots at key points (saved to the QA report directory — see below)
 6. Print PASS/FAIL with clear descriptions of what was checked
-7. Exit with code 0 on success, 1 on failure
+7. Close the browser context (not just the browser) to finalize the video
+8. Exit with code 0 on success, 1 on failure
+
+**Video recording setup:** Enable Playwright's built-in video recording on the browser context. This captures the entire QA session as a `.webm` file alongside the screenshots:
+
+```javascript
+const context = await browser.newContext({
+  viewport: { width: 1440, height: 900 },
+  recordVideo: {
+    dir: 'tmp/qa-reports/<ticket-id>/videos',
+    size: { width: 1440, height: 900 }
+  }
+});
+```
+
+**Important:** You must close the context (not just the browser) to finalize the video file. Rename it to something descriptive:
+
+```javascript
+const videoPath = await page.video().path();
+await context.close();
+await browser.close();
+fs.renameSync(videoPath, 'tmp/qa-reports/<ticket-id>/videos/<ticket-id>-qa-verification.webm');
+```
 
 **Write the script to a temp file** and run it via Bash (e.g., `npx playwright test` or `node script.js` depending on the project setup). If the project doesn't have Playwright installed, ask the user before installing it.
 
