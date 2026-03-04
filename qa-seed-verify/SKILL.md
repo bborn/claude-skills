@@ -140,7 +140,15 @@ The `index.html` report should be a self-contained file (inline CSS/JS, no exter
 - **QA steps section** at the bottom (copy-paste ready)
 - Ticket ID and timestamp
 
-After generating the report, open it in the browser: `open tmp/qa-reports/<ticket-id>/index.html`
+After generating the report, open the report in the browser and both asset folders in Finder so the user can drag-drop into the PR comment:
+
+```bash
+open tmp/qa-reports/<ticket-id>/index.html
+open tmp/qa-reports/<ticket-id>/screenshots/
+open tmp/qa-reports/<ticket-id>/videos/
+```
+
+GitHub supports `.webm` uploads via drag-and-drop on PR comments — no conversion needed. The video gives reviewers a quick walkthrough of the full QA flow, while screenshots are useful for the HTML report and inline PR references.
 </qa-report-directory>
 </step>
 
@@ -174,7 +182,7 @@ Show the user:
 1. The seed script (summarized — they can read the file)
 2. Proof the seed ran successfully (output)
 3. The HTML report (should already be open in browser from the previous step)
-4. A **ready-to-paste PR comment** — markdown-formatted QA steps that the user can copy into a GitHub PR comment. The comment should be complete text with no image placeholders — the user will drag-and-drop screenshots from `tmp/qa-reports/<ticket-id>/screenshots/` to the bottom of the comment themselves.
+4. A **ready-to-paste PR comment** — markdown-formatted QA steps that the user can copy into a GitHub PR comment. The comment should be complete text with no image/video placeholders — the user will drag-and-drop screenshots and the video from the QA report directory into the comment themselves.
 
 <pr-comment-format>
 The generated PR comment should look like:
@@ -199,10 +207,10 @@ The generated PR comment should look like:
 5. <exact action>
 6. Verify: <exact expected outcome>
 
-Screenshots attached below.
+Screenshots and video attached below.
 ```
 
-The user will paste this into the PR comment and then drag-drop the screenshots at the bottom.
+The user will paste this into the PR comment and then drag-drop the screenshots and video at the bottom.
 </pr-comment-format>
 
 5. Ask if they want to adjust anything before finalizing
