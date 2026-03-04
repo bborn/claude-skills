@@ -78,77 +78,89 @@ Execute the seed script and **verify it succeeds**.
 Write a standalone Playwright test script that verifies the QA flow end-to-end. This is a single executable file — not interactive MCP calls.
 
 <browser-approach>
-**Why a script instead of interactive browser use:** Interactive Playwright MCP tools require a permission prompt for every action (navigate, click, fill, screenshot). A standalone script runs as a single Bash command — one permission prompt for the whole flow.
+**Why a script instead of interactive browser use:** Interactive Playwright MCP tools require a permission prompt for every action (navigate, click, fill, screenshot). A Playwright test file runs as a single Bash command — one permission prompt for the whole flow.
 
-**The script should:**
-1. Launch a browser with **video recording enabled** and navigate to the app
-2. Log in using the QA auth bypass (from Gather Context)
-3. Navigate to the feature/page being tested
-4. Perform the verification steps
-5. Take screenshots at key points (saved to the QA report directory — see below)
-6. Print PASS/FAIL with clear descriptions of what was checked
-7. Close the browser context (not just the browser) to finalize the video
-8. Exit with code 0 on success, 1 on failure
+**Write as a proper Playwright test file** (`verify.spec.mjs`) using `test()` and `expect()` — NOT a raw Node script. This lets you use Playwright's built-in HTML reporter instead of generating a custom report page.
 
-**Video recording setup:** Enable Playwright's built-in video recording on the browser context. This captures the entire QA session as a `.webm` file alongside the screenshots:
+**The test file should:**
+1. Use `test.describe` for the ticket, with individual `test()` blocks for each verification step
+2. Enable **video recording** and **screenshot on failure** via `test.use()`
+3. Log in using the QA auth bypass (from Gather Context)
+4. Navigate to the feature/page being tested
+5. Perform the verification steps with `expect()` assertions
+6. Attach screenshots at key points using `test.info().attach()`
+
+**Example structure:**
 
 ```javascript
-const context = await browser.newContext({
+import { test, expect } from '@playwright/test';
+
+const BASE_URL = 'http://localhost:3000';
+const CHECKOUT_PATH = '/stacks/abc123/steps/def456';
+
+test.use({
   viewport: { width: 1440, height: 900 },
-  recordVideo: {
-    dir: 'tmp/qa-reports/<ticket-id>/videos',
-    size: { width: 1440, height: 900 }
-  }
+  video: 'on',
+  screenshot: 'on',
+  headless: false,
+});
+
+test.describe('OL-XXXX: Feature description', () => {
+  test('page loads correctly', async ({ page }) => {
+    await page.goto(`${BASE_URL}${CHECKOUT_PATH}`, { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('.some-element')).toBeVisible();
+  });
+
+  test('validation shows contextual errors', async ({ page }) => {
+    await page.goto(`${BASE_URL}${CHECKOUT_PATH}`, { waitUntil: 'domcontentloaded' });
+    // ... test steps with expect() assertions
+  });
 });
 ```
 
-**Important:** You must close the context (not just the browser) to finalize the video file. Rename it to something descriptive:
+**Running and viewing the report:**
 
-```javascript
-const videoPath = await page.video().path();
-await context.close();
-await browser.close();
-fs.renameSync(videoPath, 'tmp/qa-reports/<ticket-id>/videos/<ticket-id>-qa-verification.webm');
+```bash
+# Run tests with HTML reporter — outputs to tmp/qa-reports/<ticket-id>/
+npx playwright test tmp/qa-reports/<ticket-id>/verify.spec.mjs \
+  --reporter=html \
+  --output=tmp/qa-reports/<ticket-id>/test-results
+
+# Open the interactive HTML report (shows tests, screenshots, video, traces)
+npx playwright show-report
 ```
 
-**Write the script to a temp file** and run it via Bash (e.g., `npx playwright test` or `node script.js` depending on the project setup). If the project doesn't have Playwright installed, ask the user before installing it.
+Playwright's HTML reporter provides an interactive UI with:
+- Test status (pass/fail) per test
+- Step-by-step execution with timing
+- Embedded screenshots and video playback
+- Expandable error details and traces
+- Filtering and search
 
-**If the script fails**, debug it — read the error output, fix the script, and re-run. The same standard applies as the seed: don't ship a broken verification script.
+**No need to generate a custom `index.html`** — the built-in reporter is better.
+
+**If the tests fail**, debug them — read the error output, fix the test, and re-run. The same standard applies as the seed: don't ship a broken verification script.
 </browser-approach>
 
 <qa-report-directory>
-Save all screenshots and the HTML report to a local directory outside of git:
+Save the test file and let Playwright manage the report output:
 
 ```
 tmp/qa-reports/<ticket-id>/
-├── index.html
-├── verify.mjs
-├── screenshots/
-│   ├── 01-login.png
-│   ├── 02-navigate.png
-│   ├── 03-verify-feature.png
-│   └── ...
-└── videos/
-    └── <ticket-id>-qa-verification.webm
+├── verify.spec.mjs          # The Playwright test file
+└── test-results/             # Playwright's output (screenshots, videos, traces)
 ```
 
-Make sure `tmp/` is in `.gitignore` (add it if not). Name screenshots with a numbered prefix and descriptive slug so they sort correctly and are self-explanatory.
+Make sure `tmp/` is in `.gitignore` (add it if not).
 
-The `index.html` report should be a self-contained file (inline CSS/JS, no external dependencies) that references the screenshots via relative paths. It should include:
-- **Timeline/carousel view** — step-by-step screenshots, navigable with arrow keys or click
-- Each step shows: step number, description of what was done, screenshot, PASS/FAIL badge
-- **QA steps section** at the bottom (copy-paste ready)
-- Ticket ID and timestamp
-
-After generating the report, open the report in the browser and both asset folders in Finder so the user can drag-drop into the PR comment:
+After running the tests, open the report and the test-results folder so the user can drag-drop screenshots/video into the PR comment:
 
 ```bash
-open tmp/qa-reports/<ticket-id>/index.html
-open tmp/qa-reports/<ticket-id>/screenshots/
-open tmp/qa-reports/<ticket-id>/videos/
+npx playwright show-report
+open tmp/qa-reports/<ticket-id>/test-results/
 ```
 
-GitHub supports `.webm` uploads via drag-and-drop on PR comments — no conversion needed. The video gives reviewers a quick walkthrough of the full QA flow, while screenshots are useful for the HTML report and inline PR references.
+GitHub supports `.webm` uploads via drag-and-drop on PR comments — no conversion needed. The video gives reviewers a quick walkthrough of the full QA flow, while screenshots are useful for inline PR references.
 </qa-report-directory>
 </step>
 
