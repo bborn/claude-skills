@@ -122,11 +122,14 @@ Save all screenshots and the HTML report to a local directory outside of git:
 ```
 tmp/qa-reports/<ticket-id>/
 ├── index.html
-└── screenshots/
-    ├── 01-login.png
-    ├── 02-navigate.png
-    ├── 03-verify-feature.png
-    └── ...
+├── verify.mjs
+├── screenshots/
+│   ├── 01-login.png
+│   ├── 02-navigate.png
+│   ├── 03-verify-feature.png
+│   └── ...
+└── videos/
+    └── <ticket-id>-qa-verification.webm
 ```
 
 Make sure `tmp/` is in `.gitignore` (add it if not). Name screenshots with a numbered prefix and descriptive slug so they sort correctly and are self-explanatory.
